@@ -1,0 +1,69 @@
+﻿@page "/PaymentDetailCoU"
+@page "/PaymentDetailCoU/{Id}"
+
+@using BlazorApp.Models
+@using System.Globalization;
+@inject BlazorApp.Services.IPaymentDetailService _paymentDetailService
+@inject MudBlazor.ISnackbar snackBar
+@inject NavigationManager UriHelper
+
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Payments</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="paymentDetail.CardOwnerName" Label="Card Owner Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="paymentDetail.CardNumber" For="@(() => paymentDetail.CardNumber)" Label="Card Number" Variant="Variant.Text" Margin="Margin.Normal" HelperText="5 numbers"></MudTextField>
+        <MudTextField @bind-Value="paymentDetail.ExpirationDate" For="@(() => paymentDetail.ExpirationDate)" Label="Expiration Date" Variant="Variant.Text" Margin="Margin.Normal" HelperText="mm/yy"></MudTextField>
+        <MudTextField @bind-Value="paymentDetail.SecurityCode" Label="Security Code" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <br />
+        <MudPaper Class="d-flex justify-space-between py-2 px-1 mt-6" Elevation="0">
+            <MudButton Variant="Variant.Filled" Color="Color.Success" StartIcon="@Icons.Material.Filled.Add" OnClick="Save">Save Payment Detail</MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.ArrowBack" @onclick="@NavitateToPaymentDetailList">Back</MudButton>
+        </MudPaper>
+
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private string searchString = "";
+
+    private PaymentDetail paymentDetail = new();
+
+    // Define a property to contain the parameter passed from the auth page
+    [Parameter]
+    public string Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(Id))
+            if (int.TryParse(Id, out int intId))
+                GetPaymentDetailbyId(intId);
+
+    }
+
+    private PaymentDetail GetPaymentDetailbyId(int id)
+    {
+        Task.Run(() => paymentDetail = _paymentDetailService.GetPaymentDetailbyId(id)).Wait();
+        return paymentDetail;
+    }
+
+    private void Save()
+    {
+        //Expiration date format validation
+        if (!DateTime.TryParseExact(paymentDetail.ExpirationDate, "MM/yy", new CultureInfo("en-US"), DateTimeStyles.None, out _))
+        {
+            snackBar.Add("Expiration date in a invalid format", Severity.Warning);
+        }
+        else
+        {
+            _paymentDetailService.InsertPaymentDetail(paymentDetail);
+            snackBar.Add("Payment Details record saved", Severity.Success);
+            paymentDetail = new();
+        }
+    }
+
+    private void NavitateToPaymentDetailList() => UriHelper.NavigateTo("PaymentDetailList");
+}

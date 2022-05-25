@@ -1,0 +1,106 @@
+﻿@page "/"
+
+@using BlazorApp.Models
+@using System.Globalization;
+@inject BlazorApp.Services.IPaymentDetailService _paymentDetailService
+@inject MudBlazor.ISnackbar snackBar
+
+
+<MudCard Elevation="25">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">Add / Edit Students</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <MudTextField @bind-Value="paymentDetail.CardOwnerName" Label="Card Owner Name" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <MudTextField @bind-Value="paymentDetail.CardNumber" For="@(() => paymentDetail.CardNumber)" Label="Card Number" Variant="Variant.Text" Margin="Margin.Normal" HelperText="5 numbers"></MudTextField>
+        <MudTextField @bind-Value="paymentDetail.ExpirationDate" For="@(() => paymentDetail.ExpirationDate)" Label="Expiration Date" Variant="Variant.Text" Margin="Margin.Normal" HelperText="mm/yy"></MudTextField>
+        <MudTextField @bind-Value="paymentDetail.SecurityCode" Label="Security Code" Variant="Variant.Text" Margin="Margin.Normal"></MudTextField>
+        <br />
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="Save">Save Payment Detail</MudButton>
+    </MudCardContent>
+</MudCard>
+<br />
+<MudTable Elevation="25" Items="GetAllPaymentDetails()" Filter="new Func<PaymentDetail, bool>(Search)" @bind-customer="paymentDetail">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Payment Details</MudText>
+        <MudToolBarSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Students..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Id</MudTh>
+        <MudTh>Student Name</MudTh>
+        <MudTh>Age</MudTh>
+        <MudTh>Address</MudTh>
+        <MudTh>ContactNo</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id">@context.PaymentDetailId</MudTd>
+        <MudTd DataLabel="Student Name">@context.CardOwnerName</MudTd>
+        <MudTd DataLabel="Age">@context.CardNumber</MudTd>
+        <MudTd DataLabel="Address">@context.ExpirationDate</MudTd>
+        <MudTd DataLabel="ContactNo">@context.SecurityCode</MudTd>
+        <MudTd DataLabel="">
+            <MudFab @onclick="@(()=>Edit(@context.PaymentDetailId))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(@context.PaymentDetailId))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 5,10,20,50}" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private string searchString = "";
+
+    private PaymentDetail paymentDetail = new(); //C# 9 Syntax
+    private List<PaymentDetail> paymentDetails = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetAllPaymentDetails();
+    }
+
+    private List<PaymentDetail> GetAllPaymentDetails()
+    {
+        paymentDetails = _paymentDetailService.GetPaymentsDetail();
+        return paymentDetails;
+    }
+
+    private bool Search(PaymentDetail paymentDetail)
+    {
+        if (paymentDetail.CardOwnerName is not null && paymentDetail.CardOwnerName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private void Save()
+    {
+        //Expiration date format validation
+        if (!DateTime.TryParseExact(paymentDetail.ExpirationDate, "MM/yy", new CultureInfo("en-US"), DateTimeStyles.None, out _))
+        {
+            snackBar.Add("Expiration date in a invalid format", Severity.Warning);
+        }
+        else
+        {
+            _paymentDetailService.InsertPaymentDetail(paymentDetail);
+            snackBar.Add("Payment Details record saved", Severity.Success);
+            GetAllPaymentDetails();
+            paymentDetail = new();
+        }
+    }
+    private void Edit(int id)
+    {
+        paymentDetail = paymentDetails.FirstOrDefault(c => c.PaymentDetailId == id);
+    }
+    private void Delete(int id)
+    {
+        _paymentDetailService.DeletePaymentDetail(id);
+        snackBar.Add("Payment Details Data Deleted.", Severity.Success);
+        GetAllPaymentDetails();
+    }
+}

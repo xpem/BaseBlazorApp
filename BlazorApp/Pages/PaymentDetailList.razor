@@ -1,0 +1,79 @@
+﻿@page "/PaymentDetailList"
+
+@using BlazorApp.Models
+@inject BlazorApp.Services.IPaymentDetailService _paymentDetailService
+@inject MudBlazor.ISnackbar snackBar
+@inject NavigationManager UriHelper
+
+<MudButton Variant="Variant.Filled" StartIcon="@Icons.Material.Filled.Add" Color="Color.Primary" @onclick="@NavitateToPaymentDetailCoU" Size="Size.Medium">Add a Payment Detail</MudButton>
+<br />
+<MudTable Elevation="25" Items="GetAllPaymentDetails()" Filter="new Func<PaymentDetail, bool>(Search)" @bind-customer="paymentDetail">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Payment Details</MudText>
+        <MudToolBarSpacer />
+        <MudTextField @bind-Value="searchString" Placeholder="Search for Payment Details..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+    </ToolBarContent>
+    <HeaderContent>
+        <MudTh>Id</MudTh>
+        <MudTh>Card Owner Name</MudTh>
+        <MudTh>Card Number</MudTh>
+        <MudTh>Expiration Date</MudTh>
+        <MudTh>Security Code</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Id">@context.PaymentDetailId</MudTd>
+        <MudTd DataLabel="Student Name">@context.CardOwnerName</MudTd>
+        <MudTd DataLabel="Age">@context.CardNumber</MudTd>
+        <MudTd DataLabel="Address">@context.ExpirationDate</MudTd>
+        <MudTd DataLabel="ContactNo">@context.SecurityCode</MudTd>
+        <MudTd DataLabel="">
+            <MudFab @onclick="@(()=>Edit(@context.PaymentDetailId))" Color="Color.Primary" Icon="@Icons.Material.Filled.Edit" Size="Size.Small" IconSize="Size.Small" />
+            <MudFab @onclick="@(()=>Delete(@context.PaymentDetailId))" Color="Color.Secondary" Icon="@Icons.Material.Filled.Delete" Size="Size.Small" IconSize="Size.Small" />
+        </MudTd>
+    </RowTemplate>
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 5,10,20,50}" />
+    </PagerContent>
+</MudTable>
+
+@code {
+    private string searchString = "";
+    private PaymentDetail paymentDetail = new();
+    private List<PaymentDetail> paymentDetails = new();
+
+    protected async Task OnInitializedAsync()
+    {
+        GetAllPaymentDetails();
+    }
+
+    private List<PaymentDetail> GetAllPaymentDetails()
+    {
+        Task.Run(() => paymentDetails = _paymentDetailService.GetPaymentsDetail()).Wait();
+        return paymentDetails;
+    }
+
+    private bool Search(PaymentDetail paymentDetail)
+    {
+        if (paymentDetail.CardOwnerName is not null && paymentDetail.CardOwnerName.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+        return false;
+    }
+
+    private void Edit(int id)
+    {
+        paymentDetail = paymentDetails.FirstOrDefault(c => c.PaymentDetailId == id);
+        UriHelper.NavigateTo("PaymentDetailCoU/"+id);
+    }
+    private void Delete(int id)
+    {
+        //_paymentDetailService.DeletePaymentDetail(id);
+        //snackBar.Add("Payment Details Data Deleted.", Severity.Success);
+        //GetAllPaymentDetails();
+    }
+
+    private void NavitateToPaymentDetailCoU() => UriHelper.NavigateTo("PaymentDetailCoU");
+
+}
